@@ -45,6 +45,36 @@ export class AddressDto {
   longitude?: number;
 }
 
+export class CreateAddressDto {
+  @IsString()
+  @IsNotEmpty()
+  line1: string;
+
+  @IsString()
+  @IsOptional()
+  line2?: string;
+
+  @IsUUID()
+  @IsNotEmpty()
+  cityId: string;
+
+  @IsString()
+  @IsNotEmpty()
+  state: string;
+
+  @IsString()
+  @IsNotEmpty()
+  pincode: string;
+
+  @IsNumber()
+  @IsOptional()
+  latitude?: number;
+
+  @IsNumber()
+  @IsOptional()
+  longitude?: number;
+}
+
 export class TourStopDto {
   @IsNotEmpty()
   @IsUUID()
@@ -260,7 +290,15 @@ export class TourResponseDto {
   createdAt: Date;
   updatedAt: Date;
 }
+export class CreateTourStopDto {
+  @IsUUID()
+  @IsNotEmpty()
+  cityId: string;
 
+  @IsInt()
+  @Min(1)
+  stopSequence: number;
+}
 export class PaginatedToursResponseDto {
   items: TourResponseDto[];
   meta: {
