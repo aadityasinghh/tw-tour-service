@@ -14,7 +14,6 @@ async function bootstrap() {
     }),
   );
 
-  // Add cookie parser middleware
   app.use(cookieParser());
 
   // CORS configuration if needed
@@ -23,6 +22,6 @@ async function bootstrap() {
     credentials: true, // Important for cookies to work cross-domain
   });
 
-  await app.listen(3000);
+  await app.listen(3003);
 }
 bootstrap();

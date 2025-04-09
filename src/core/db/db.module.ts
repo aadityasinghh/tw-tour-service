@@ -6,18 +6,19 @@ import { ItemType } from 'src/apis/tour/entities/item-type.entity';
 import { TourStop } from 'src/apis/tour/entities/tour-stop.entity';
 import { Tour } from 'src/apis/tour/entities/tour.entity';
 import { TravelMode } from 'src/apis/tour/entities/travel-mode.entity';
-// import { User } from 'src/apis/user/entities/user.entity';
+import * as dotenv from 'dotenv';
 
+dotenv.config();
 @Global()
 @Module({
   imports: [
     TypeOrmModule.forRoot({
-      type: 'postgres',
-      host: 'localhost',
-      port: 5432,
-      username: 'adityasingh393',
-      password: 'Aditya@20',
-      database: 'tw-tours',
+      type: process.env.DB_TYPE as 'postgres',
+      host: process.env.DB_HOST,
+      port: parseInt(process.env.DB_PORT || '5432', 10),
+      username: process.env.DB_USERNAME,
+      password: process.env.DB_PASSWORD,
+      database: process.env.DB_DATABASE,
       // entities: [__dirname + '/**/*.entity{.ts/,.js}'],
       entities: [Tour, Address, TourStop, City, TravelMode, ItemType],
       migrations: [__dirname + '/migrations/*.ts'],

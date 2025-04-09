@@ -69,13 +69,13 @@ export class ToursController {
   }
 
   @Get(':id')
-  @UseGuards(AuthGuard)
+  // @UseGuards(AuthGuard)
   async getTourDetails(@Param('id') id: string) {
     return this.toursService.getTourWithDetails(id);
   }
 
   @Put(':id')
-  @UseGuards(AuthGuard, VerifiedUserGuard)
+  @UseGuards(AuthGuard)
   async updateTour(
     @Param('id') id: string,
     @Request() req,
@@ -91,4 +91,3 @@ export class ToursController {
     return this.toursService.deleteTour(id, req.user.userId);
   }
 }
- 
