@@ -1,4 +1,3 @@
-// tours-service/src/tours/tours.controller.ts
 import {
   Controller,
   Post,
@@ -28,7 +27,7 @@ export class ToursController {
   constructor(private readonly toursService: ToursService) {}
 
   @Post()
-  // @UseGuards(AuthGuard, VerifiedUserGuard)
+  @UseGuards(AuthGuard, VerifiedUserGuard)
   @UseGuards(AuthGuard)
   async createTour(
     @Request() req,
@@ -51,8 +50,8 @@ export class ToursController {
   ) {
     return this.toursService.createAddress(
       req.user.userId,
-      tourId || null,
-      createAddressDto,
+      // tourId || null,
+      // createAddressDto,
     );
   }
 

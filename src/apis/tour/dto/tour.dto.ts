@@ -3,7 +3,6 @@ import {
   IsArray,
   IsBoolean,
   IsDate,
-  IsDecimal,
   IsInt,
   IsNotEmpty,
   IsNumber,

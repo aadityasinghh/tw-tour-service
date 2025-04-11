@@ -1,4 +1,3 @@
-// tours-service/src/common/guards/verified-user.guard.ts
 import {
   Injectable,
   CanActivate,
@@ -19,7 +18,7 @@ export class VerifiedUserGuard implements CanActivate {
     }
 
     // Check if the user's email is verified
-    if (!user.isEmailVerified) {
+    if (!user.email_verified) {
       throw new ForbiddenException(
         'Only verified users can create and manage tours',
       );

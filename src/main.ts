@@ -22,6 +22,6 @@ async function bootstrap() {
     credentials: true, // Important for cookies to work cross-domain
   });
 
-  await app.listen(3003);
+  await app.listen(3002);
 }
 bootstrap();

@@ -1,4 +1,3 @@
-// tours-service/src/tours/tours.service.ts
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import {
@@ -12,15 +11,11 @@ import { Tour } from './entities/tour.entity';
 import { Address } from './entities/address.entity';
 import { TourStop } from './entities/tour-stop.entity';
 import {
-  CreateAddressDto,
+  // CreateAddressDto,
   CreateTourDto,
   CreateTourStopDto,
   SearchTourDto,
 } from './dto/tour.dto';
-// import { CreateTourDto } from './dto/create-tour.dto';
-// import { SearchTourDto } from './dto/search-tour.dto';
-// import { CreateAddressDto } from './dto/create-address.dto';
-// import { CreateTourStopDto } from './dto/create-tour-stop.dto';
 
 @Injectable()
 export class ToursService {
@@ -33,31 +28,6 @@ export class ToursService {
     private tourStopRepository: Repository<TourStop>,
   ) {}
 
-  // async createTour(
-  //   userId: string,
-  //   createTourDto: CreateTourDto,
-  //   tourStops: CreateTourStopDto[],
-  // ): Promise<Tour> {
-  //   const tour = this.toursRepository.create({
-  //     ...createTourDto,
-  //     userId,
-  //   });
-
-  //   const savedTour = await this.toursRepository.save(tour);
-
-  //   // Create tour stops
-  //   if (tourStops && tourStops.length > 0) {
-  //     const stops = tourStops.map((stop) =>
-  //       this.tourStopRepository.create({
-  //         ...stop,
-  //         tourId: savedTour.tourId,
-  //       }),
-  //     );
-  //     await this.tourStopRepository.save(stops);
-  //   }
-
-  //   return savedTour;
-  // }
   async createTour(
     userId: string,
     createTourDto: CreateTourDto,
@@ -110,13 +80,13 @@ export class ToursService {
 
   async createAddress(
     userId: string,
-    tourId: string | null,
-    createAddressDto: CreateAddressDto,
+    // tourId: string | null,
+    // createAddressDto: CreateAddressDto,
   ): Promise<Address> {
     const newAddress: DeepPartial<Address> = {
       userId: userId,
     };
-    const address = await this.addressRepository.create(newAddress);
+    const address = this.addressRepository.create(newAddress);
 
     return this.addressRepository.save(address);
   }
