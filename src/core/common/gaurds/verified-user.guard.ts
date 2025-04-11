@@ -11,6 +11,7 @@ export class VerifiedUserGuard implements CanActivate {
     const request = context.switchToHttp().getRequest();
 
     // User data comes from the AuthGuard
+    // console.log(request);
     const user = request.user;
 
     if (!user) {

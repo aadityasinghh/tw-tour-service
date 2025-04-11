@@ -4,7 +4,10 @@ import {
   Entity,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
+  ManyToMany,
+  JoinTable,
 } from 'typeorm';
+import { ItemType } from '../entities/item-type.entity';
 
 @Entity('tours')
 export class Tour {
@@ -29,8 +32,17 @@ export class Tour {
   @Column({ name: 'arrival_time', type: 'timestamp' })
   arrivalTime: Date;
 
-  @Column({ name: 'item_type_id', type: 'uuid' })
-  itemTypeId: string;
+  // Remove the single itemTypeId field and replace with many-to-many relationship
+  @ManyToMany(() => ItemType)
+  @JoinTable({
+    name: 'tour_item_types',
+    joinColumn: { name: 'tour_id', referencedColumnName: 'tourId' },
+    inverseJoinColumn: {
+      name: 'item_type_id',
+      referencedColumnName: 'itemTypeId',
+    },
+  })
+  itemTypes: ItemType[];
 
   @Column({ name: 'max_weight', type: 'float' })
   maxWeight: number;

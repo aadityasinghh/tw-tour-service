@@ -11,6 +11,7 @@ import {
   Delete,
   HttpCode,
   HttpStatus,
+  BadRequestException,
 } from '@nestjs/common';
 import { ToursService } from './tour.service';
 import { VerifiedUserGuard } from 'src/core/common/gaurds/verified-user.guard';
@@ -20,7 +21,9 @@ import {
   CreateTourDto,
   CreateTourStopDto,
   SearchTourDto,
+  UpdateTourDto,
 } from './dto/tour.dto';
+import { ResponseMessages } from 'src/utils/messages';
 
 @Controller('tours')
 export class ToursController {
@@ -28,17 +31,28 @@ export class ToursController {
 
   @Post()
   @UseGuards(AuthGuard, VerifiedUserGuard)
-  @UseGuards(AuthGuard)
   async createTour(
     @Request() req,
     @Body() createTourDto: CreateTourDto,
     @Body('tourStops') tourStops: CreateTourStopDto[],
   ) {
-    return this.toursService.createTour(
-      req.user.userId,
-      createTourDto,
-      tourStops,
-    );
+    try {
+      return await this.toursService.createTour(
+        req.user.userId,
+        createTourDto,
+        tourStops,
+      );
+    } catch (error) {
+      if (error instanceof BadRequestException) {
+        throw error;
+      }
+      throw new BadRequestException({
+        data: null,
+        code: ResponseMessages.BAD_REQUEST.code,
+
+        message: error.message || ResponseMessages.BAD_REQUEST.message,
+      });
+    }
   }
 
   @Post('address')
@@ -48,11 +62,19 @@ export class ToursController {
     @Body() createAddressDto: CreateAddressDto,
     @Body('tourId') tourId?: string,
   ) {
-    return this.toursService.createAddress(
-      req.user.userId,
-      // tourId || null,
-      // createAddressDto,
-    );
+    try {
+      return await this.toursService.createAddress(
+        req.user.userId,
+        createAddressDto,
+        tourId,
+      );
+    } catch (error) {
+      throw new BadRequestException({
+        data: null,
+        code: ResponseMessages.BAD_REQUEST.code,
+        message: error.message || ResponseMessages.BAD_REQUEST.message,
+      });
+    }
   }
 
   @Get('my-tours')
@@ -68,7 +90,7 @@ export class ToursController {
   }
 
   @Get(':id')
-  // @UseGuards(AuthGuard)
+  @UseGuards(AuthGuard) // Making this endpoint authenticated as per security best practice
   async getTourDetails(@Param('id') id: string) {
     return this.toursService.getTourWithDetails(id);
   }
@@ -78,15 +100,49 @@ export class ToursController {
   async updateTour(
     @Param('id') id: string,
     @Request() req,
-    @Body() updateTourDto: Partial<CreateTourDto>,
+    @Body() updateTourDto: UpdateTourDto,
   ) {
-    return this.toursService.updateTour(id, req.user.userId, updateTourDto);
+    try {
+      return await this.toursService.updateTour(
+        id,
+        req.user.userId,
+        updateTourDto,
+      );
+    } catch (error) {
+      if (error.message === ResponseMessages.NOT_FOUND.message) {
+        throw new BadRequestException({
+          data: null,
+          code: ResponseMessages.NOT_FOUND.code,
+          message: ResponseMessages.NOT_FOUND.message,
+        });
+      }
+      throw new BadRequestException({
+        data: null,
+        code: ResponseMessages.BAD_REQUEST.code,
+        message: error.message || ResponseMessages.BAD_REQUEST.message,
+      });
+    }
   }
 
   @Delete(':id')
   @UseGuards(AuthGuard, VerifiedUserGuard)
-  @HttpCode(HttpStatus.NO_CONTENT)
+  @HttpCode(HttpStatus.OK) // Changed to OK to return the response object
   async deleteTour(@Param('id') id: string, @Request() req) {
-    return this.toursService.deleteTour(id, req.user.userId);
+    try {
+      return await this.toursService.deleteTour(id, req.user.userId);
+    } catch (error) {
+      if (error.message === ResponseMessages.NOT_FOUND.message) {
+        throw new BadRequestException({
+          data: null,
+          code: ResponseMessages.NOT_FOUND.code,
+          message: ResponseMessages.NOT_FOUND.message,
+        });
+      }
+      throw new BadRequestException({
+        data: null,
+        code: ResponseMessages.BAD_REQUEST.code,
+        message: error.message || ResponseMessages.BAD_REQUEST.message,
+      });
+    }
   }
 }

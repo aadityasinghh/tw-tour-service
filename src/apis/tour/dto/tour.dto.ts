@@ -12,6 +12,8 @@ import {
   IsUUID,
   Min,
   ValidateNested,
+  ArrayNotEmpty,
+  isNotEmpty,
 } from 'class-validator';
 
 export class AddressDto {
@@ -109,8 +111,10 @@ export class CreateTourDto {
   arrivalTime: Date;
 
   @IsNotEmpty()
-  @IsUUID()
-  itemTypeId: string;
+  @IsArray()
+  @ArrayNotEmpty()
+  @IsUUID('4', { each: true })
+  itemTypeIds: string[]; // Changed to array of UUIDs
 
   @IsNotEmpty()
   @IsNumber()
@@ -170,6 +174,11 @@ export class UpdateTourDto {
   arrivalTime?: Date;
 
   @IsOptional()
+  @IsArray()
+  @IsUUID('4', { each: true })
+  itemTypeIds?: string[]; // Changed to array of UUIDs
+
+  @IsOptional()
   @IsNumber()
   @IsPositive()
   maxWeight?: number;
@@ -178,6 +187,16 @@ export class UpdateTourDto {
   @IsInt()
   @IsPositive()
   availableSpace?: number;
+
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => AddressDto)
+  pickupAddress?: AddressDto;
+
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => AddressDto)
+  dropAddress?: AddressDto;
 
   @IsOptional()
   @IsInt()
@@ -192,6 +211,12 @@ export class UpdateTourDto {
   @IsOptional()
   @IsBoolean()
   pnrVerified?: boolean;
+
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => TourStopDto)
+  tourStops?: TourStopDto[];
 }
 
 export class SearchTourDto {
@@ -268,12 +293,13 @@ export class TourResponseDto {
   };
   departureTime: Date;
   arrivalTime: Date;
-  itemTypeId: string;
-  itemType?: {
+  itemTypeIds: string[]; // Changed to array
+  itemTypes?: Array<{
+    // Changed to array of item types
     itemTypeId: string;
     name: string;
     code: string;
-  };
+  }>;
   maxWeight: number;
   availableSpace: number;
   pickupAddressId: string;
@@ -289,15 +315,7 @@ export class TourResponseDto {
   createdAt: Date;
   updatedAt: Date;
 }
-export class CreateTourStopDto {
-  @IsUUID()
-  @IsNotEmpty()
-  cityId: string;
 
-  @IsInt()
-  @Min(1)
-  stopSequence: number;
-}
 export class PaginatedToursResponseDto {
   items: TourResponseDto[];
   meta: {
@@ -307,4 +325,14 @@ export class PaginatedToursResponseDto {
     totalPages: number;
     currentPage: number;
   };
+}
+
+export class CreateTourStopDto {
+  @IsUUID()
+  @IsNotEmpty()
+  cityId: string;
+
+  @IsInt()
+  @Min(1)
+  stopSequence: number;
 }
