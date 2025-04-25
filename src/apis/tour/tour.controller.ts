@@ -39,6 +39,8 @@ export class ToursController {
     try {
       return await this.toursService.createTour(
         req.user.userId,
+        req.user.email,
+        req.user.name,
         createTourDto,
         tourStops,
       );
@@ -84,7 +86,7 @@ export class ToursController {
   }
 
   @Get('search')
-  @UseGuards(AuthGuard)
+  // @UseGuards(AuthGuard)
   async searchTours(@Query() searchTourDto: SearchTourDto) {
     return this.toursService.searchTours(searchTourDto);
   }
