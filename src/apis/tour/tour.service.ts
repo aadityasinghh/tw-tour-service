@@ -29,6 +29,8 @@ import {
 } from './dto/tour.dto';
 import { ApiResponse } from 'src/utils/interfaces';
 import { ResponseMessages } from 'src/utils/messages';
+import { NotificationService } from '../notification/notification.service';
+import { Request } from 'express';
 // import { ApiResponse, ResponseMessages } from './response.utils';
 
 @Injectable()
@@ -43,10 +45,13 @@ export class ToursService {
     @InjectRepository(ItemType)
     private itemTypeRepository: Repository<ItemType>,
     private dataSource: DataSource,
+    private readonly notificationService: NotificationService,
   ) {}
 
   async createTour(
     userId: string,
+    email: string,
+    name: string,
     createTourDto: CreateTourDto,
     tourStops: CreateTourStopDto[],
   ): Promise<ApiResponse<Tour>> {
@@ -143,7 +148,7 @@ export class ToursService {
 
       // Commit the transaction
       await queryRunner.commitTransaction();
-
+      // await this.notificationService.sendEmailVerificationSuccess(email, name);
       return {
         data: savedTour,
         code: ResponseMessages.TOUR_CREATED.code,

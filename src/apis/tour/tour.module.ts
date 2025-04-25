@@ -11,6 +11,7 @@ import { ToursService } from './tour.service';
 import { ToursController } from './tour.controller';
 import { HttpModule, HttpService } from '@nestjs/axios';
 import { ConfigService } from '@nestjs/config';
+import { NotificationService } from '../notification/notification.service';
 
 @Module({
   imports: [
@@ -22,10 +23,10 @@ import { ConfigService } from '@nestjs/config';
       ItemType,
       Address,
     ]),
-    HttpModule
+    HttpModule,
   ],
   controllers: [ToursController],
-  providers: [ToursService,ConfigService],
+  providers: [ToursService, ConfigService, NotificationService],
   exports: [ToursService],
 })
 export class TourModule {}
