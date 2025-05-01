@@ -28,10 +28,13 @@ import {
   UpdateTourDto,
 } from './dto/tour.dto';
 import { ApiResponse } from 'src/utils/interfaces';
-import { ResponseMessages } from 'src/utils/messages';
+import {
+  ResponseMessages,
+  ResponseCodes,
+} from 'src/core/common/constants/response-messages.constant';
 import { NotificationService } from '../notification/notification.service';
 import { Request } from 'express';
-// import { ApiResponse, ResponseMessages } from './response.utils';
+import { ResponseService } from 'src/core/common/services/response.service';
 
 @Injectable()
 export class ToursService {
@@ -46,6 +49,7 @@ export class ToursService {
     private itemTypeRepository: Repository<ItemType>,
     private dataSource: DataSource,
     private readonly notificationService: NotificationService,
+    private readonly responseService: ResponseService,
   ) {}
 
   async createTour(
@@ -54,7 +58,7 @@ export class ToursService {
     name: string,
     createTourDto: CreateTourDto,
     tourStops: CreateTourStopDto[],
-  ): Promise<ApiResponse<Tour>> {
+  ): Promise<Tour> {
     // Check if user already has a tour from a different city on the same day
     const journeyDate = new Date(createTourDto.journeyDate);
     journeyDate.setHours(0, 0, 0, 0);
@@ -73,7 +77,10 @@ export class ToursService {
       existingTour &&
       existingTour.sourceCityId !== createTourDto.sourceCityId
     ) {
-      throw new BadRequestException(ResponseMessages.DUPLICATE_TOUR.message);
+      return this.responseService.badRequest(
+        ResponseMessages.DUPLICATE_TOUR.message,
+        ResponseCodes.DUPLICATE_TOUR,
+      );
     }
 
     // Start a transaction
@@ -99,7 +106,10 @@ export class ToursService {
       });
 
       if (itemTypes.length !== createTourDto.itemTypeIds.length) {
-        throw new BadRequestException('One or more item types do not exist');
+        await queryRunner.rollbackTransaction();
+        return this.responseService.badRequest(
+          'One or more item types do not exist',
+        );
       }
 
       // Now create the tour with the address IDs
@@ -149,11 +159,7 @@ export class ToursService {
       // Commit the transaction
       await queryRunner.commitTransaction();
       // await this.notificationService.sendEmailVerificationSuccess(email, name);
-      return {
-        data: savedTour,
-        code: ResponseMessages.TOUR_CREATED.code,
-        message: ResponseMessages.TOUR_CREATED.message,
-      };
+      return savedTour;
     } catch (error) {
       // Rollback the transaction in case of error
       await queryRunner.rollbackTransaction();
@@ -168,7 +174,7 @@ export class ToursService {
     userId: string,
     createAddressDto: CreateAddressDto,
     tourId?: string,
-  ): Promise<ApiResponse<Address>> {
+  ): Promise<Address> {
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
@@ -184,11 +190,7 @@ export class ToursService {
 
       await queryRunner.commitTransaction();
 
-      return {
-        data: savedAddress,
-        code: ResponseMessages.ADDRESS_CREATED.code,
-        message: ResponseMessages.ADDRESS_CREATED.message,
-      };
+      return savedAddress;
     } catch (error) {
       await queryRunner.rollbackTransaction();
       throw error;
@@ -197,39 +199,31 @@ export class ToursService {
     }
   }
 
-  async findTourById(tourId: string): Promise<ApiResponse<Tour>> {
+  async findTourById(tourId: string): Promise<Tour> {
     const tour = await this.toursRepository.findOne({
       where: { tourId },
       relations: ['itemTypes'],
     });
 
     if (!tour) {
-      throw new NotFoundException(ResponseMessages.NOT_FOUND.message);
+      return this.responseService.notFound('Tour', `with ID ${tourId}`);
     }
 
-    return {
-      data: tour,
-      code: ResponseMessages.TOUR_FOUND.code,
-      message: ResponseMessages.TOUR_FOUND.message,
-    };
+    return tour;
   }
 
-  async findToursByUserId(userId: string): Promise<ApiResponse<Tour[]>> {
+  async findToursByUserId(userId: string): Promise<Tour[]> {
     const tours = await this.toursRepository.find({
       where: { userId },
       relations: ['itemTypes'],
     });
 
-    return {
-      data: tours,
-      code: ResponseMessages.TOURS_FOUND.code,
-      message: ResponseMessages.TOURS_FOUND.message,
-    };
+    return tours;
   }
 
   async searchTours(
     searchTourDto: SearchTourDto,
-  ): Promise<ApiResponse<PaginatedToursResponseDto>> {
+  ): Promise<PaginatedToursResponseDto> {
     const {
       sourceCityId,
       destinationCityId,
@@ -305,7 +299,7 @@ export class ToursService {
     // Build pagination metadata
     const totalPages = Math.ceil(totalItems / limit);
 
-    const paginatedResponse: PaginatedToursResponseDto = {
+    return {
       items: items as unknown as TourResponseDto[],
       meta: {
         totalItems,
@@ -315,61 +309,51 @@ export class ToursService {
         currentPage: page,
       },
     };
-
-    return {
-      data: paginatedResponse,
-      code: ResponseMessages.TOURS_FOUND.code,
-      message: ResponseMessages.TOURS_FOUND.message,
-    };
   }
 
   async updateTour(
     tourId: string,
     userId: string,
     updateTourDto: UpdateTourDto,
-  ): Promise<ApiResponse<Tour>> {
-    // Start transaction
+  ): Promise<Tour> {
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
+
     try {
-      // First check if the tour exists and belongs to the user
-      const tour = await queryRunner.manager.findOne(Tour, {
+      // First, find the tour to update
+      const tour = await this.toursRepository.findOne({
         where: { tourId },
+        relations: ['itemTypes'],
       });
+
       if (!tour) {
-        throw new NotFoundException(ResponseMessages.NOT_FOUND.message);
+        // await queryRunner.rollbackTransaction();
+        return this.responseService.notFound('Tour', `with ID ${tourId}`);
       }
-      if (tour?.userId !== userId) {
-        throw new UnauthorizedException(
-          ResponseMessages.UNAUTHORIZED_TO_UPDATE,
+
+      // Check if user is authorized to update
+      if (tour.userId !== userId) {
+        await queryRunner.rollbackTransaction();
+        return this.responseService.unauthorized(
+          ResponseMessages.USER_NOT_AUTHORIZED,
         );
       }
 
-      // Create a copy of updateTourDto without the relations that need special handling
-      const {
-        pickupAddress,
-        dropAddress,
-        tourStops,
-        itemTypeIds,
-        ...tourUpdateData
-      } = updateTourDto;
-
-      // Update the tour basic data
-      await queryRunner.manager.update(Tour, tourId, tourUpdateData);
-
-      // If itemTypeIds are updated, handle them
-      if (itemTypeIds && itemTypeIds.length > 0) {
-        // Verify that all item types exist
+      // Verify that all item types exist if provided
+      if (updateTourDto.itemTypeIds && updateTourDto.itemTypeIds.length > 0) {
         const itemTypes = await this.itemTypeRepository.find({
-          where: { itemTypeId: In(itemTypeIds) },
+          where: { itemTypeId: In(updateTourDto.itemTypeIds) },
         });
 
-        if (itemTypes.length !== itemTypeIds.length) {
-          throw new BadRequestException('One or more item types do not exist');
+        if (itemTypes.length !== updateTourDto.itemTypeIds.length) {
+          await queryRunner.rollbackTransaction();
+          return this.responseService.badRequest(
+            'One or more item types do not exist',
+          );
         }
 
-        // Remove existing item type associations
+        // Update item types (clear existing and add new ones)
         await queryRunner.manager
           .createQueryBuilder()
           .delete()
@@ -377,70 +361,61 @@ export class ToursService {
           .where('tour_id = :tourId', { tourId })
           .execute();
 
-        // Add new item type associations
         await queryRunner.manager
           .createQueryBuilder()
           .insert()
           .into('tour_item_types')
           .values(
-            itemTypeIds.map((itemTypeId) => ({
+            updateTourDto.itemTypeIds.map((itemTypeId) => ({
               tour_id: tourId,
               item_type_id: itemTypeId,
             })),
           )
           .execute();
+
+        // Remove itemTypeIds from DTO as we've handled it separately
+        delete updateTourDto.itemTypeIds;
       }
 
-      // If pickup address is updated, handle it
-      if (pickupAddress) {
-        await queryRunner.manager.update(
-          Address,
-          tour.pickupAddressId,
-          pickupAddress,
-        );
+      // Update pickup address if provided
+      if (updateTourDto.pickupAddress) {
+        await queryRunner.manager.save(Address, {
+          ...updateTourDto.pickupAddress,
+          id: tour.pickupAddressId,
+          userId,
+          tourId,
+        });
+        delete updateTourDto.pickupAddress;
       }
 
-      // If drop address is updated, handle it
-      if (dropAddress) {
-        await queryRunner.manager.update(
-          Address,
-          tour.dropAddressId,
-          dropAddress,
-        );
+      // Update drop address if provided
+      if (updateTourDto.dropAddress) {
+        await queryRunner.manager.save(Address, {
+          ...updateTourDto.dropAddress,
+          id: tour.dropAddressId,
+          userId,
+          tourId,
+        });
+        delete updateTourDto.dropAddress;
       }
 
-      // If tour stops are updated, handle them
-      if (tourStops && tourStops.length > 0) {
-        // Delete existing stops
-        await queryRunner.manager.delete(TourStop, { tourId });
+      // Update tour itself
+      queryRunner.manager.merge(Tour, tour, updateTourDto);
+      await queryRunner.manager.save(tour);
 
-        // Create new stops
-        const stops = tourStops.map((stop) =>
-          this.tourStopRepository.create({
-            ...stop,
-            tourId,
-          }),
-        );
-        await queryRunner.manager.save(TourStop, stops);
-      }
-
-      // Commit transaction
-      await queryRunner.commitTransaction();
-
-      // Return the updated tour with its relations
-      const updatedTour = await this.toursRepository.findOne({
+      // Fetch the completely updated tour with all relations
+      const finalTour = await queryRunner.manager.findOne(Tour, {
         where: { tourId },
-        relations: ['itemTypes'],
+        relations: ['itemTypes', 'pickupAddress', 'dropAddress'],
       });
 
-      if (!updatedTour) {
-        throw new NotFoundException('Tour not found after update');
+      if (!finalTour) {
+        await queryRunner.rollbackTransaction();
+        return this.responseService.notFound('Tour', 'not found after update');
       }
-      return {
-        data: updatedTour,
-        code: ResponseMessages.TOUR_UPDATED.code,
-        message: ResponseMessages.TOUR_UPDATED.message,
-      };
+
+      await queryRunner.commitTransaction();
+      return finalTour;
     } catch (error) {
       // Rollback transaction in case of error
       await queryRunner.rollbackTransaction();
@@ -451,7 +426,7 @@ export class ToursService {
     }
   }
 
-  async deleteTour(tourId: string, userId: string): Promise<ApiResponse<null>> {
+  async deleteTour(tourId: string, userId: string): Promise<null> {
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
@@ -463,10 +438,15 @@ export class ToursService {
       });
 
       if (!tour) {
-        throw new NotFoundException(ResponseMessages.NOT_FOUND.message);
+        await queryRunner.rollbackTransaction();
+        return this.responseService.notFound('Tour', `with ID ${tourId}`);
       }
+
       if (tour?.userId !== userId) {
-        throw new UnauthorizedException('not authorised to delete this tour');
+        await queryRunner.rollbackTransaction();
+        return this.responseService.unauthorized(
+          ResponseMessages.NOT_AUTHORIZED_TO_DELETE,
+        );
       }
 
       // Delete item type associations
@@ -489,11 +469,7 @@ export class ToursService {
       // Commit transaction
       await queryRunner.commitTransaction();
 
-      return {
-        data: null,
-        code: ResponseMessages.TOUR_DELETED.code,
-        message: ResponseMessages.TOUR_DELETED.message,
-      };
+      return null;
     } catch (error) {
       // Rollback transaction in case of error
       await queryRunner.rollbackTransaction();
@@ -504,7 +480,7 @@ export class ToursService {
     }
   }
 
-  async getTourWithDetails(tourId: string): Promise<ApiResponse<any>> {
+  async getTourWithDetails(tourId: string): Promise<any> {
     // Create a query to get the tour with all related data
     const tour = await this.toursRepository.findOne({
       where: { tourId },
@@ -512,7 +488,7 @@ export class ToursService {
     });
 
     if (!tour) {
-      throw new NotFoundException(ResponseMessages.NOT_FOUND.message);
+      return this.responseService.notFound('Tour', `with ID ${tourId}`);
     }
 
     // Get pickup and drop addresses
@@ -527,17 +503,11 @@ export class ToursService {
       order: { stopSequence: 'ASC' },
     });
 
-    const tourDetails = {
+    return {
       ...tour,
       pickupAddress,
       dropAddress,
       stops,
-    };
-
-    return {
-      data: tourDetails,
-      code: ResponseMessages.TOUR_FOUND.code,
-      message: ResponseMessages.TOUR_FOUND.message,
     };
   }
 }

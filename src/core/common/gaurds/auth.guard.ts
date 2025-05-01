@@ -3,12 +3,12 @@ import {
   Injectable,
   CanActivate,
   ExecutionContext,
-  UnauthorizedException,
   HttpStatus,
 } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { ConfigService } from '@nestjs/config';
 import { Observable, catchError, map, of } from 'rxjs';
+import { ResponseService } from '../services/response.service';
 
 interface AuthResponse {
   status: number;
@@ -25,6 +25,7 @@ export class AuthGuard implements CanActivate {
   constructor(
     private httpService: HttpService,
     private configService: ConfigService,
+    private responseService: ResponseService,
   ) {}
 
   canActivate(
@@ -37,7 +38,9 @@ export class AuthGuard implements CanActivate {
     const token = request.cookies?.access_token;
 
     if (!token) {
-      throw new UnauthorizedException('Authentication token is missing');
+      return this.responseService.unauthorized(
+        'Authentication token is missing',
+      );
     }
 
     // Call the auth service's validation endpoint
@@ -57,7 +60,7 @@ export class AuthGuard implements CanActivate {
           return false;
         }),
         catchError(() => {
-          throw new UnauthorizedException(
+          return this.responseService.unauthorized(
             'Invalid token or user not authenticated',
           );
         }),
