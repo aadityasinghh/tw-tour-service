@@ -3,6 +3,7 @@ import {
   IsArray,
   IsBoolean,
   IsDate,
+  IsEnum,
   IsInt,
   IsNotEmpty,
   IsNumber,
@@ -15,66 +16,9 @@ import {
   ArrayNotEmpty,
   isNotEmpty,
 } from 'class-validator';
+import { TourStatus } from '../entities/tour.entity';
+import { AddressDto } from 'src/apis/address/dto/address.dto';
 
-export class AddressDto {
-  @IsNotEmpty()
-  @IsString()
-  line1: string;
-
-  @IsOptional()
-  @IsString()
-  line2?: string;
-
-  @IsNotEmpty()
-  @IsUUID()
-  cityId: string;
-
-  @IsNotEmpty()
-  @IsString()
-  state: string;
-
-  @IsNotEmpty()
-  @IsString()
-  pincode: string;
-
-  @IsOptional()
-  @IsNumber()
-  latitude?: number;
-
-  @IsOptional()
-  @IsNumber()
-  longitude?: number;
-}
-
-export class CreateAddressDto {
-  @IsString()
-  @IsNotEmpty()
-  line1: string;
-
-  @IsString()
-  @IsOptional()
-  line2?: string;
-
-  @IsUUID()
-  @IsNotEmpty()
-  cityId: string;
-
-  @IsString()
-  @IsNotEmpty()
-  state: string;
-
-  @IsString()
-  @IsNotEmpty()
-  pincode: string;
-
-  @IsNumber()
-  @IsOptional()
-  latitude?: number;
-
-  @IsNumber()
-  @IsOptional()
-  longitude?: number;
-}
 
 export class TourStopDto {
   @IsNotEmpty()
@@ -213,6 +157,10 @@ export class UpdateTourDto {
   pnrVerified?: boolean;
 
   @IsOptional()
+  @IsEnum(TourStatus)
+  status?: TourStatus;
+
+  @IsOptional()
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => TourStopDto)
@@ -335,4 +283,11 @@ export class CreateTourStopDto {
   @IsInt()
   @Min(1)
   stopSequence: number;
+}
+
+export class UpdateTourAvailableSpaceDto {
+  @IsNotEmpty()
+  @IsInt()
+  @IsPositive()
+  availableSpace: number;
 }

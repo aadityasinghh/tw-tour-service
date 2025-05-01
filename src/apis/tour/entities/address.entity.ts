@@ -4,7 +4,10 @@ import {
   Entity,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
+  ManyToOne,
+  JoinColumn,
 } from 'typeorm';
+import { City } from './city.entity';
 
 @Entity('addresses')
 export class Address {
@@ -25,6 +28,10 @@ export class Address {
 
   @Column({ name: 'city_id', type: 'uuid' })
   cityId: string;
+
+  @ManyToOne(() => City)
+  @JoinColumn({ name: 'city_id' })
+  city: City;
 
   @Column({ name: 'state', type: 'varchar' })
   state: string;

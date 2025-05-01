@@ -9,7 +9,7 @@ import { ItemType } from './entities/item-type.entity';
 import { Address } from './entities/address.entity';
 import { ToursService } from './tour.service';
 import { ToursController } from './tour.controller';
-import { HttpModule, HttpService } from '@nestjs/axios';
+import { HttpModule } from '@nestjs/axios';
 import { ConfigService } from '@nestjs/config';
 import { NotificationService } from '../notification/notification.service';
 

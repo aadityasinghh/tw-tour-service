@@ -9,6 +9,13 @@ import {
 } from 'typeorm';
 import { ItemType } from '../entities/item-type.entity';
 
+export enum TourStatus {
+  PENDING = 'PENDING',
+  ACTIVE = 'ACTIVE',
+  COMPLETED = 'COMPLETED',
+  CANCELLED = 'CANCELLED',
+}
+
 @Entity('tours')
 export class Tour {
   @PrimaryGeneratedColumn('uuid')
@@ -70,6 +77,14 @@ export class Tour {
 
   @Column({ name: 'journey_date', type: 'date' })
   journeyDate: Date;
+
+  @Column({
+    name: 'status',
+    type: 'enum',
+    enum: TourStatus,
+    default: TourStatus.PENDING,
+  })
+  status: TourStatus;
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;

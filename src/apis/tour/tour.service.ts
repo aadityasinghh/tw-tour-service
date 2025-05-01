@@ -13,19 +13,21 @@ import {
   DeepPartial,
   DataSource,
   In,
+  LessThanOrEqual,
+  MoreThanOrEqual,
 } from 'typeorm';
-import { Tour } from './entities/tour.entity';
+import { Tour, TourStatus } from './entities/tour.entity';
 import { Address } from './entities/address.entity';
 import { TourStop } from './entities/tour-stop.entity';
 import { ItemType } from './entities/item-type.entity';
 import {
-  CreateAddressDto,
   CreateTourDto,
   CreateTourStopDto,
   SearchTourDto,
   PaginatedToursResponseDto,
   TourResponseDto,
   UpdateTourDto,
+  UpdateTourAvailableSpaceDto,
 } from './dto/tour.dto';
 import { ApiResponse } from 'src/utils/interfaces';
 import {
@@ -35,6 +37,7 @@ import {
 import { NotificationService } from '../notification/notification.service';
 import { Request } from 'express';
 import { ResponseService } from 'src/core/common/services/response.service';
+import { CreateAddressDto } from '../address/dto/address.dto';
 
 @Injectable()
 export class ToursService {
@@ -59,7 +62,7 @@ export class ToursService {
     createTourDto: CreateTourDto,
     tourStops: CreateTourStopDto[],
   ): Promise<Tour> {
-    // Check if user already has a tour from a different city on the same day
+    // Check if user already has a tour on the same day, regardless of city
     const journeyDate = new Date(createTourDto.journeyDate);
     journeyDate.setHours(0, 0, 0, 0);
 
@@ -73,10 +76,7 @@ export class ToursService {
       },
     });
 
-    if (
-      existingTour &&
-      existingTour.sourceCityId !== createTourDto.sourceCityId
-    ) {
+    if (existingTour) {
       return this.responseService.badRequest(
         ResponseMessages.DUPLICATE_TOUR.message,
         ResponseCodes.DUPLICATE_TOUR,
@@ -118,6 +118,7 @@ export class ToursService {
         pickupAddressId: pickupAddress.id,
         dropAddressId: dropAddress.id,
         userId,
+        status: TourStatus.PENDING,
       });
 
       const savedTour = await queryRunner.manager.save(tour);
@@ -296,11 +297,80 @@ export class ToursService {
     // Execute query
     const [items, totalItems] = await query.getManyAndCount();
 
+    // Enhance the results with detailed information
+    const enhancedItems = await Promise.all(
+      items.map(async (tour) => {
+        // Get complete source and destination city objects
+        const [sourceCity, destinationCity] = await Promise.all([
+          this.dataSource.query('SELECT * FROM cities WHERE "cityId" = $1', [
+            tour.sourceCityId,
+          ]),
+          this.dataSource.query('SELECT * FROM cities WHERE "cityId" = $1', [
+            tour.destinationCityId,
+          ]),
+        ]);
+
+        // Get tour stops
+        const stops = await this.tourStopRepository.find({
+          where: { tourId: tour.tourId },
+          order: { stopSequence: 'ASC' },
+        });
+
+        // Get intermediate stop cities (complete objects)
+        const intermediateStopCities = await Promise.all(
+          stops.map((stop) =>
+            this.dataSource.query('SELECT * FROM cities WHERE "cityId" = $1', [
+              stop.cityId,
+            ]),
+          ),
+        );
+
+        // Create enhanced stops with city information
+        const enhancedStops = stops.map((stop, index) => ({
+          ...stop,
+          city: intermediateStopCities[index]?.[0] || null,
+        }));
+
+        // Get pickup and drop addresses
+        const [pickupAddress, dropAddress] = await Promise.all([
+          this.addressRepository.findOne({
+            where: { id: tour.pickupAddressId },
+          }),
+          this.addressRepository.findOne({ where: { id: tour.dropAddressId } }),
+        ]);
+
+        // Create the cleaned response object by removing redundant fields
+        return {
+          tourId: tour.tourId,
+          userId: tour.userId,
+          departureTime: tour.departureTime,
+          arrivalTime: tour.arrivalTime,
+          itemTypes: tour.itemTypes,
+          maxWeight: tour.maxWeight,
+          availableSpace: tour.availableSpace,
+          maxItems: tour.maxItems,
+          pricePerKg: tour.pricePerKg,
+          pnrNumber: tour.pnrNumber,
+          pnrVerified: tour.pnrVerified,
+          journeyDate: tour.journeyDate,
+          status: tour.status,
+          createdAt: tour.createdAt,
+          updatedAt: tour.updatedAt,
+          sourceCity: sourceCity?.[0] || null,
+          destinationCity: destinationCity?.[0] || null,
+          pickupAddress,
+          dropAddress,
+          stops: enhancedStops,
+          availableSlots: tour.availableSpace,
+        };
+      }),
+    );
+
     // Build pagination metadata
     const totalPages = Math.ceil(totalItems / limit);
 
     return {
-      items: items as unknown as TourResponseDto[],
+      items: enhancedItems as unknown as TourResponseDto[],
       meta: {
         totalItems,
         itemCount: items.length,
@@ -328,15 +398,22 @@ export class ToursService {
       });
 
       if (!tour) {
-        // await queryRunner.rollbackTransaction();
         return this.responseService.notFound('Tour', `with ID ${tourId}`);
       }
 
       // Check if user is authorized to update
       if (tour.userId !== userId) {
-        await queryRunner.rollbackTransaction();
         return this.responseService.unauthorized(
           ResponseMessages.USER_NOT_AUTHORIZED,
+        );
+      }
+
+      // Check if tour has already started
+      const now = new Date();
+      if (now >= tour.departureTime) {
+        await queryRunner.rollbackTransaction();
+        return this.responseService.badRequest(
+          'Cannot update a tour that has already started',
         );
       }
 
@@ -378,26 +455,26 @@ export class ToursService {
       }
 
       // Update pickup address if provided
-      if (updateTourDto.pickupAddress) {
-        await queryRunner.manager.save(Address, {
-          ...updateTourDto.pickupAddress,
-          id: tour.pickupAddressId,
-          userId,
-          tourId,
-        });
-        delete updateTourDto.pickupAddress;
-      }
+      // if (updateTourDto.pickupAddress) {
+      //   await queryRunner.manager.save(Address, {
+      //     ...updateTourDto.pickupAddress,
+      //     id: tour.pickupAddressId,
+      //     userId,
+      //     tourId,
+      //   });
+      //   delete updateTourDto.pickupAddress;
+      // }
 
-      // Update drop address if provided
-      if (updateTourDto.dropAddress) {
-        await queryRunner.manager.save(Address, {
-          ...updateTourDto.dropAddress,
-          id: tour.dropAddressId,
-          userId,
-          tourId,
-        });
-        delete updateTourDto.dropAddress;
-      }
+      // // Update drop address if provided
+      // if (updateTourDto.dropAddress) {
+      //   await queryRunner.manager.save(Address, {
+      //     ...updateTourDto.dropAddress,
+      //     id: tour.dropAddressId,
+      //     userId,
+      //     tourId,
+      //   });
+      //   delete updateTourDto.dropAddress;
+      // }
 
       // Update tour itself
       queryRunner.manager.merge(Tour, tour, updateTourDto);
@@ -426,6 +503,48 @@ export class ToursService {
     }
   }
 
+  async updateTourAvailableSpace(
+    tourId: string,
+    userId: string,
+    updateTourAvailableSpaceDto: UpdateTourAvailableSpaceDto,
+  ): Promise<Tour> {
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      // Find the tour to update
+      const tour = await this.toursRepository.findOne({
+        where: { tourId },
+      });
+
+      if (!tour) {
+        await queryRunner.rollbackTransaction();
+        return this.responseService.notFound('Tour', `with ID ${tourId}`);
+      }
+
+      // Check if user is authorized to update
+      if (tour.userId !== userId) {
+        await queryRunner.rollbackTransaction();
+        return this.responseService.unauthorized(
+          ResponseMessages.USER_NOT_AUTHORIZED,
+        );
+      }
+
+      // Update available space
+      tour.availableSpace = updateTourAvailableSpaceDto.availableSpace;
+      await queryRunner.manager.save(tour);
+
+      await queryRunner.commitTransaction();
+      return tour;
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      throw error;
+    } finally {
+      await queryRunner.release();
+    }
+  }
+
   async deleteTour(tourId: string, userId: string): Promise<null> {
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
@@ -446,6 +565,15 @@ export class ToursService {
         await queryRunner.rollbackTransaction();
         return this.responseService.unauthorized(
           ResponseMessages.NOT_AUTHORIZED_TO_DELETE,
+        );
+      }
+
+      // Check if tour has already started
+      const now = new Date();
+      if (now >= tour.departureTime) {
+        await queryRunner.rollbackTransaction();
+        return this.responseService.badRequest(
+          'Cannot delete a tour that has already started',
         );
       }
 
@@ -503,11 +631,56 @@ export class ToursService {
       order: { stopSequence: 'ASC' },
     });
 
-    return {
-      ...tour,
+    // Get complete city objects instead of just names
+    const [sourceCity, destinationCity] = await Promise.all([
+      this.dataSource.query('SELECT * FROM cities WHERE "cityId" = $1', [
+        tour.sourceCityId,
+      ]),
+      this.dataSource.query('SELECT * FROM cities WHERE "cityId" = $1', [
+        tour.destinationCityId,
+      ]),
+    ]);
+
+    // Get intermediate stop cities (complete objects)
+    const intermediateStopCities = await Promise.all(
+      stops.map((stop) =>
+        this.dataSource.query('SELECT * FROM cities WHERE "cityId" = $1', [
+          stop.cityId,
+        ]),
+      ),
+    );
+
+    // Create enhanced stops with city information
+    const enhancedStops = stops.map((stop, index) => ({
+      ...stop,
+      city: intermediateStopCities[index]?.[0] || null,
+    }));
+
+    // Create the cleaned response object by removing redundant fields
+    const cleanedResponse = {
+      tourId: tour.tourId,
+      userId: tour.userId,
+      departureTime: tour.departureTime,
+      arrivalTime: tour.arrivalTime,
+      itemTypes: tour.itemTypes,
+      maxWeight: tour.maxWeight,
+      availableSpace: tour.availableSpace,
+      maxItems: tour.maxItems,
+      pricePerKg: tour.pricePerKg,
+      pnrNumber: tour.pnrNumber,
+      pnrVerified: tour.pnrVerified,
+      journeyDate: tour.journeyDate,
+      status: tour.status,
+      createdAt: tour.createdAt,
+      updatedAt: tour.updatedAt,
+      sourceCity: sourceCity?.[0] || null,
+      destinationCity: destinationCity?.[0] || null,
       pickupAddress,
       dropAddress,
-      stops,
+      stops: enhancedStops,
+      availableSlots: tour.availableSpace,
     };
+
+    return cleanedResponse;
   }
 }

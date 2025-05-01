@@ -12,19 +12,21 @@ import {
   HttpCode,
   HttpStatus,
   ParseUUIDPipe,
+  Patch,
 } from '@nestjs/common';
 import { ToursService } from './tour.service';
 import { VerifiedUserGuard } from 'src/core/common/gaurds/verified-user.guard';
 import { AuthGuard } from 'src/core/common/gaurds/auth.guard';
 import {
-  CreateAddressDto,
   CreateTourDto,
   CreateTourStopDto,
   SearchTourDto,
   UpdateTourDto,
+  UpdateTourAvailableSpaceDto,
 } from './dto/tour.dto';
 import { ResponseService } from 'src/core/common/services/response.service';
 import { ResponseMessages } from 'src/core/common/constants/response-messages.constant';
+import { CreateAddressDto } from '../address/dto/address.dto';
 
 @Controller('tours')
 export class ToursController {
@@ -107,6 +109,24 @@ export class ToursController {
     return this.responseService.success(
       updatedTour,
       ResponseMessages.TOUR_UPDATED,
+    );
+  }
+
+  @Patch(':id/available-space')
+  @UseGuards(AuthGuard)
+  async updateAvailableSpace(
+    @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
+    @Request() req,
+    @Body() updateTourAvailableSpaceDto: UpdateTourAvailableSpaceDto,
+  ) {
+    const updatedTour = await this.toursService.updateTourAvailableSpace(
+      id,
+      req.user.userId,
+      updateTourAvailableSpaceDto,
+    );
+    return this.responseService.success(
+      updatedTour,
+      'Tour available space updated successfully',
     );
   }
 
