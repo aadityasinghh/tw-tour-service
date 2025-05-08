@@ -6,9 +6,9 @@ import { ResponseService } from '../services/response.service';
  * @returns True if valid UUID format, false otherwise
  */
 export function isValidUUID(id: string): boolean {
-  const uuidRegex =
-    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-  return uuidRegex.test(id);
+    const uuidRegex =
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    return uuidRegex.test(id);
 }
 
 /**
@@ -19,13 +19,13 @@ export function isValidUUID(id: string): boolean {
  * @returns void if valid, never returns if invalid (throws exception)
  */
 export function validateUUID(
-  id: string,
-  responseService: ResponseService,
-  entityName: string = 'Resource',
+    id: string,
+    responseService: ResponseService,
+    entityName: string = 'Resource',
 ): void {
-  if (!isValidUUID(id)) {
-    responseService.badRequest(
-      `Invalid ${entityName} ID format: ${id}. Expected a valid UUID.`,
-    );
-  }
+    if (!isValidUUID(id)) {
+        responseService.badRequest(
+            `Invalid ${entityName} ID format: ${id}. Expected a valid UUID.`,
+        );
+    }
 }
