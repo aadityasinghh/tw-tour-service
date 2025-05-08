@@ -11,20 +11,20 @@ import * as dotenv from 'dotenv';
 dotenv.config();
 @Global()
 @Module({
-  imports: [
-    TypeOrmModule.forRoot({
-      type: process.env.DB_TYPE as 'postgres',
-      host: process.env.DB_HOST,
-      port: parseInt(process.env.DB_PORT || '5432', 10),
-      username: process.env.DB_USERNAME,
-      password: process.env.DB_PASSWORD,
-      database: process.env.DB_DATABASE,
-      // entities: [__dirname + '/**/*.entity{.ts/,.js}'],
-      entities: [Tour, Address, TourStop, City, TravelMode, ItemType],
-      migrations: [__dirname + '/migrations/*.ts'],
-      migrationsRun: true,
-      synchronize: false,
-    }),
-  ],
+    imports: [
+        TypeOrmModule.forRoot({
+            type: process.env.DB_TYPE as 'postgres',
+            host: process.env.DB_HOST,
+            port: parseInt(process.env.DB_PORT || '5432', 10),
+            username: process.env.DB_USERNAME,
+            password: process.env.DB_PASSWORD,
+            database: process.env.DB_DATABASE,
+            // entities: [__dirname + '/**/*.entity{.ts/,.js}'],
+            entities: [Tour, Address, TourStop, City, TravelMode, ItemType],
+            migrations: [__dirname + '/migrations/*.ts'],
+            migrationsRun: true,
+            synchronize: false,
+        }),
+    ],
 })
 export class DatabaseModule {}

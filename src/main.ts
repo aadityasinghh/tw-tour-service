@@ -6,31 +6,31 @@ import { GlobalExceptionFilter } from './core/common/filters/http-exception.filt
 import { ResponseInterceptor } from './core/common/interceptors/response.interceptor';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+    const app = await NestFactory.create(AppModule);
 
-  // Global validation pipe
-  app.useGlobalPipes(
-    new ValidationPipe({
-      whitelist: true,
-      transform: true,
-      forbidNonWhitelisted: true,
-    }),
-  );
+    // Global validation pipe
+    app.useGlobalPipes(
+        new ValidationPipe({
+            whitelist: true,
+            transform: true,
+            forbidNonWhitelisted: true,
+        }),
+    );
 
-  // Global exception filter
-  app.useGlobalFilters(new GlobalExceptionFilter());
+    // Global exception filter
+    app.useGlobalFilters(new GlobalExceptionFilter());
 
-  // Global response interceptor
-  app.useGlobalInterceptors(new ResponseInterceptor());
+    // Global response interceptor
+    app.useGlobalInterceptors(new ResponseInterceptor());
 
-  app.use(cookieParser());
+    app.use(cookieParser());
 
-  // CORS configuration if needed
-  app.enableCors({
-    origin: true, // Or specify domains: ['http://localhost:3000', 'https://yourdomain.com']
-    credentials: true, // Important for cookies to work cross-domain
-  });
+    // CORS configuration if needed
+    app.enableCors({
+        origin: true, // Or specify domains: ['http://localhost:3000', 'https://yourdomain.com']
+        credentials: true, // Important for cookies to work cross-domain
+    });
 
-  await app.listen(3002);
+    await app.listen(3002);
 }
 bootstrap();

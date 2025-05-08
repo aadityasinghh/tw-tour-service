@@ -3,7 +3,7 @@ import { ResponseService } from './services/response.service';
 
 @Global()
 @Module({
-  providers: [ResponseService],
-  exports: [ResponseService],
+    providers: [ResponseService],
+    exports: [ResponseService],
 })
 export class CommonModule {}

@@ -5,7 +5,7 @@ import { AddressModule } from './address/address.module';
 import { MasterModule } from './master/master.module';
 
 @Module({
-  imports: [DatabaseModule, TourModule, AddressModule, MasterModule],
-  providers: [],
+    imports: [DatabaseModule, TourModule, AddressModule, MasterModule],
+    providers: [],
 })
 export class ApiModule {}

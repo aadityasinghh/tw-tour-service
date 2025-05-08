@@ -14,19 +14,19 @@ import { ConfigService } from '@nestjs/config';
 import { NotificationService } from '../notification/notification.service';
 
 @Module({
-  imports: [
-    TypeOrmModule.forFeature([
-      Tour,
-      TourStop,
-      City,
-      TravelMode,
-      ItemType,
-      Address,
-    ]),
-    HttpModule,
-  ],
-  controllers: [ToursController],
-  providers: [ToursService, ConfigService, NotificationService],
-  exports: [ToursService],
+    imports: [
+        TypeOrmModule.forFeature([
+            Tour,
+            TourStop,
+            City,
+            TravelMode,
+            ItemType,
+            Address,
+        ]),
+        HttpModule,
+    ],
+    controllers: [ToursController],
+    providers: [ToursService, ConfigService, NotificationService],
+    exports: [ToursService],
 })
 export class TourModule {}

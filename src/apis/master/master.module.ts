@@ -7,9 +7,9 @@ import { MasterDataController } from './master-data.controller';
 import { MasterDataService } from './master-data.service';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([City, TravelMode, ItemType])],
-  controllers: [MasterDataController],
-  providers: [MasterDataService],
-  exports: [MasterDataService],
+    imports: [TypeOrmModule.forFeature([City, TravelMode, ItemType])],
+    controllers: [MasterDataController],
+    providers: [MasterDataService],
+    exports: [MasterDataService],
 })
 export class MasterModule {}
