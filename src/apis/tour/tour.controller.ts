@@ -27,6 +27,16 @@ import {
 import { ResponseService } from 'src/core/common/services/response.service';
 import { ResponseMessages } from 'src/core/common/constants/response-messages.constant';
 import { CreateAddressDto } from '../address/dto/address.dto';
+import { ApiResponse } from 'src/core/common/interfaces/api-response.interface';
+
+// Define interface for authenticated user request
+interface AuthenticatedRequest extends Request {
+    user: {
+        userId: string;
+        email: string;
+        name: string;
+    };
+}
 
 @Controller('tours')
 export class ToursController {
@@ -38,10 +48,10 @@ export class ToursController {
     @Post()
     @UseGuards(AuthGuard, VerifiedUserGuard)
     async createTour(
-        @Request() req,
+        @Request() req: AuthenticatedRequest,
         @Body() createTourDto: CreateTourDto,
         @Body('tourStops') tourStops: CreateTourStopDto[],
-    ) {
+    ): Promise<ApiResponse<unknown>> {
         const tour = await this.toursService.createTour(
             req.user.userId,
             req.user.email,
@@ -58,11 +68,11 @@ export class ToursController {
     @Post('address')
     @UseGuards(AuthGuard)
     async createAddress(
-        @Request() req,
+        @Request() req: AuthenticatedRequest,
         @Body() createAddressDto: CreateAddressDto,
         @Body('tourId', new ParseUUIDPipe({ version: '4', optional: true }))
         tourId?: string,
-    ) {
+    ): Promise<ApiResponse<unknown>> {
         const address = await this.toursService.createAddress(
             req.user.userId,
             createAddressDto,
@@ -70,13 +80,15 @@ export class ToursController {
         );
         return this.responseService.success(
             address,
-            'Address created successfully',
+            ResponseMessages.ADDRESS_CREATED,
         );
     }
 
     @Get('my-tours')
     @UseGuards(AuthGuard)
-    async getMyTours(@Request() req) {
+    async getMyTours(
+        @Request() req: AuthenticatedRequest,
+    ): Promise<ApiResponse<unknown>> {
         const tours = await this.toursService.findToursByUserId(
             req.user.userId,
         );
@@ -88,7 +100,9 @@ export class ToursController {
 
     @Get('search')
     // @UseGuards(AuthGuard)
-    async searchTours(@Query() searchTourDto: SearchTourDto) {
+    async searchTours(
+        @Query() searchTourDto: SearchTourDto,
+    ): Promise<ApiResponse<unknown>> {
         const tours = await this.toursService.searchTours(searchTourDto);
         return this.responseService.success(
             tours,
@@ -100,7 +114,7 @@ export class ToursController {
     @UseGuards(AuthGuard) // Making this endpoint authenticated as per security best practice
     async getTourDetails(
         @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
-    ) {
+    ): Promise<ApiResponse<unknown>> {
         const tour = await this.toursService.getTourWithDetails(id);
         return this.responseService.success(tour, ResponseMessages.TOUR_FOUND);
     }
@@ -109,9 +123,9 @@ export class ToursController {
     @UseGuards(AuthGuard)
     async updateTour(
         @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
-        @Request() req,
+        @Request() req: AuthenticatedRequest,
         @Body() updateTourDto: UpdateTourDto,
-    ) {
+    ): Promise<ApiResponse<unknown>> {
         const updatedTour = await this.toursService.updateTour(
             id,
             req.user.userId,
@@ -127,9 +141,9 @@ export class ToursController {
     @UseGuards(AuthGuard)
     async updateAvailableSpace(
         @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
-        @Request() req,
+        @Request() req: AuthenticatedRequest,
         @Body() updateTourAvailableSpaceDto: UpdateTourAvailableSpaceDto,
-    ) {
+    ): Promise<ApiResponse<unknown>> {
         const updatedTour = await this.toursService.updateTourAvailableSpace(
             id,
             req.user.userId,
@@ -137,7 +151,7 @@ export class ToursController {
         );
         return this.responseService.success(
             updatedTour,
-            'Tour available space updated successfully',
+            ResponseMessages.TOUR_AVAILABLE_SPACE_UPDATED,
         );
     }
 
@@ -146,8 +160,8 @@ export class ToursController {
     @HttpCode(HttpStatus.OK) // Changed to OK to return the response object
     async deleteTour(
         @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
-        @Request() req,
-    ) {
+        @Request() req: AuthenticatedRequest,
+    ): Promise<ApiResponse<unknown>> {
         const result = await this.toursService.deleteTour(id, req.user.userId);
         return this.responseService.success(
             result,

@@ -6,6 +6,8 @@ import {
     SearchItemTypeDto,
     SearchTravelModeDto,
 } from '../tour/dto/search.dto';
+import { ResponseMessages } from 'src/core/common/constants/response-messages.constant';
+import { ApiResponse } from 'src/core/common/interfaces/api-response.interface';
 
 @Controller()
 export class MasterDataController {
@@ -15,31 +17,37 @@ export class MasterDataController {
     ) {}
 
     @Get('cities')
-    async getCities(@Query() searchCityDto: SearchCityDto) {
+    async getCities(
+        @Query() searchCityDto: SearchCityDto,
+    ): Promise<ApiResponse<unknown>> {
         const result = await this.masterDataService.getCities(searchCityDto);
         return this.responseService.success(
             result,
-            'Cities retrieved successfully',
+            ResponseMessages.CITY_RETRIEVED,
         );
     }
 
     @Get('item-types')
-    async getItemTypes(@Query() searchItemTypeDto: SearchItemTypeDto) {
+    async getItemTypes(
+        @Query() searchItemTypeDto: SearchItemTypeDto,
+    ): Promise<ApiResponse<unknown>> {
         const result =
             await this.masterDataService.getItemTypes(searchItemTypeDto);
         return this.responseService.success(
             result,
-            'Item types retrieved successfully',
+            ResponseMessages.ITEM_TYPE_RETRIEVED,
         );
     }
 
     @Get('travel-modes')
-    async getTravelModes(@Query() searchTravelModeDto: SearchTravelModeDto) {
+    async getTravelModes(
+        @Query() searchTravelModeDto: SearchTravelModeDto,
+    ): Promise<ApiResponse<unknown>> {
         const result =
             await this.masterDataService.getTravelModes(searchTravelModeDto);
         return this.responseService.success(
             result,
-            'Travel modes retrieved successfully',
+            ResponseMessages.TRAVEL_MODE_RETRIEVED,
         );
     }
 }

@@ -14,7 +14,6 @@ import {
     Min,
     ValidateNested,
     ArrayNotEmpty,
-    isNotEmpty,
 } from 'class-validator';
 import { TourStatus } from '../entities/tour.entity';
 import { AddressDto } from 'src/apis/address/dto/address.dto';
@@ -57,7 +56,7 @@ export class CreateTourDto {
     @IsArray()
     @ArrayNotEmpty()
     @IsUUID('4', { each: true })
-    itemTypeIds: string[]; // Changed to array of UUIDs
+    itemTypeIds: string[]; 
 
     @IsNotEmpty()
     @IsNumber()

@@ -14,13 +14,15 @@ export class VerifiedUserGuard implements CanActivate {
         const user = request.user;
 
         if (!user) {
-            return this.responseService.forbidden('User not authenticated');
+            return this.responseService.forbidden(
+                ResponseMessages.UNAUTHORIZED,
+            );
         }
 
         // Check if the user's email is verified
         if (!user.email_verified) {
             return this.responseService.forbidden(
-                'Only verified users can create and manage tours',
+                ResponseMessages.USER_NOT_AUTHORIZED,
             );
         }
 

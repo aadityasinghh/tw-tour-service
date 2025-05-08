@@ -27,7 +27,17 @@ export const ResponseMessages = {
     TOUR_NOT_FOUND: 'Tour not found',
     TOURS_FOUND: 'Tours retrieved successfully',
     TOUR_FOUND: 'Tour details retrieved successfully',
+    TOUR_AVAILABLE_SPACE_UPDATED: 'Tour available space updated successfully',
+    TOUR_ALREADY_STARTED: 'Cannot update a tour that has already started',
     NOT_AUTHORIZED_TO_DELETE: 'Not authorized to delete this tour',
+
+    ADDRESS_RETRIEVED: 'Addresses retrieved successfully',
+    CITY_RETRIEVED: 'Cities retrieved successfully',
+    ITEM_TYPE_RETRIEVED: 'Item types retrieved successfully',
+    TRAVEL_MODE_RETRIEVED: 'Travel modes retrieved successfully',
+    ADDRESS_CREATED: 'Address created successfully',
+
+    ITEM_TYPE_DOES_NOT_EXIST: 'One or more item types do not exist',
 };
 
 export const ResponseCodes = {

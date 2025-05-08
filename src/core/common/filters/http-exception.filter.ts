@@ -9,14 +9,21 @@ import { Response } from 'express';
 import { ResponseCodes } from '../constants/response-messages.constant';
 import { QueryFailedError } from 'typeorm';
 
+// Define interface for response body
+interface ResponseBody {
+    data: null;
+    message: string;
+    code: string;
+}
+
 @Catch()
 export class GlobalExceptionFilter implements ExceptionFilter {
-    catch(exception: any, host: ArgumentsHost) {
+    catch(exception: unknown, host: ArgumentsHost): void {
         const ctx = host.switchToHttp();
         const response = ctx.getResponse<Response>();
 
         let status = HttpStatus.INTERNAL_SERVER_ERROR;
-        let responseBody: any = {
+        let responseBody: ResponseBody = {
             data: null,
             message: 'Internal server error',
             code: ResponseCodes.FAILED,
@@ -34,14 +41,15 @@ export class GlobalExceptionFilter implements ExceptionFilter {
                 'message' in exceptionResponse &&
                 'code' in exceptionResponse
             ) {
-                responseBody = exceptionResponse;
+                responseBody = exceptionResponse as ResponseBody;
             } else {
                 // NestJS's standard HttpException
                 responseBody.message =
-                    typeof exceptionResponse === 'object'
-                        ? (exceptionResponse as any).message ||
+                    typeof exceptionResponse === 'object' &&
+                    exceptionResponse !== null
+                        ? (exceptionResponse as { message?: string }).message ||
                           'An error occurred'
-                        : exceptionResponse;
+                        : String(exceptionResponse);
 
                 // Set appropriate code based on status
                 switch (status) {

@@ -5,7 +5,7 @@ import cookieParser from 'cookie-parser';
 import { GlobalExceptionFilter } from './core/common/filters/http-exception.filter';
 import { ResponseInterceptor } from './core/common/interceptors/response.interceptor';
 
-async function bootstrap() {
+async function bootstrap(): Promise<void> {
     const app = await NestFactory.create(AppModule);
 
     // Global validation pipe

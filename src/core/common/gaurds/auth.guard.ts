@@ -7,8 +7,9 @@ import {
 } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { ConfigService } from '@nestjs/config';
-import { Observable, catchError, map, of } from 'rxjs';
+import { Observable, catchError, map } from 'rxjs';
 import { ResponseService } from '../services/response.service';
+import { ResponseMessages } from '../constants/response-messages.constant';
 
 interface AuthResponse {
     status: number;
@@ -61,7 +62,7 @@ export class AuthGuard implements CanActivate {
                 }),
                 catchError(() => {
                     return this.responseService.unauthorized(
-                        'Invalid token or user not authenticated',
+                        ResponseMessages.UNAUTHORIZED,
                     );
                 }),
             );

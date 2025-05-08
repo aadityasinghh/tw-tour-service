@@ -1,20 +1,16 @@
 import {
     Injectable,
-    BadRequestException,
-    NotFoundException,
-    UnauthorizedException,
+  
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import {
     Repository,
-    FindOptionsOrder,
-    FindOptionsWhere,
+  
     Between,
     DeepPartial,
     DataSource,
     In,
-    LessThanOrEqual,
-    MoreThanOrEqual,
+  
 } from 'typeorm';
 import { Tour, TourStatus } from './entities/tour.entity';
 import { Address } from './entities/address.entity';
@@ -29,13 +25,11 @@ import {
     UpdateTourDto,
     UpdateTourAvailableSpaceDto,
 } from './dto/tour.dto';
-import { ApiResponse } from 'src/utils/interfaces';
 import {
     ResponseMessages,
     ResponseCodes,
 } from 'src/core/common/constants/response-messages.constant';
 import { NotificationService } from '../notification/notification.service';
-import { Request } from 'express';
 import { ResponseService } from 'src/core/common/services/response.service';
 import { CreateAddressDto } from '../address/dto/address.dto';
 
@@ -108,7 +102,7 @@ export class ToursService {
             if (itemTypes.length !== createTourDto.itemTypeIds.length) {
                 await queryRunner.rollbackTransaction();
                 return this.responseService.badRequest(
-                    'One or more item types do not exist',
+                    ResponseMessages.ITEM_TYPE_DOES_NOT_EXIST,
                 );
             }
 
@@ -425,7 +419,7 @@ export class ToursService {
             if (now >= tour.departureTime) {
                 await queryRunner.rollbackTransaction();
                 return this.responseService.badRequest(
-                    'Cannot update a tour that has already started',
+                    ResponseMessages.TOUR_ALREADY_STARTED,
                 );
             }
 
@@ -441,7 +435,7 @@ export class ToursService {
                 if (itemTypes.length !== updateTourDto.itemTypeIds.length) {
                     await queryRunner.rollbackTransaction();
                     return this.responseService.badRequest(
-                        'One or more item types do not exist',
+                        ResponseMessages.ITEM_TYPE_DOES_NOT_EXIST,
                     );
                 }
 
@@ -597,7 +591,7 @@ export class ToursService {
             if (now >= tour.departureTime) {
                 await queryRunner.rollbackTransaction();
                 return this.responseService.badRequest(
-                    'Cannot delete a tour that has already started',
+                    ResponseMessages.TOUR_ALREADY_STARTED,
                 );
             }
 
