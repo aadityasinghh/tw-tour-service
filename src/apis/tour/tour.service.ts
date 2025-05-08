@@ -1,17 +1,6 @@
-import {
-    Injectable,
-  
-} from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import {
-    Repository,
-  
-    Between,
-    DeepPartial,
-    DataSource,
-    In,
-  
-} from 'typeorm';
+import { Repository, Between, DeepPartial, DataSource, In } from 'typeorm';
 import { Tour, TourStatus } from './entities/tour.entity';
 import { Address } from './entities/address.entity';
 import { TourStop } from './entities/tour-stop.entity';

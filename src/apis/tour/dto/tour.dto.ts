@@ -56,7 +56,7 @@ export class CreateTourDto {
     @IsArray()
     @ArrayNotEmpty()
     @IsUUID('4', { each: true })
-    itemTypeIds: string[]; 
+    itemTypeIds: string[];
 
     @IsNotEmpty()
     @IsNumber()
